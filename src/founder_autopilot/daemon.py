@@ -1,28 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 import time
-from typing import Protocol
 
+from founder_autopilot.adapters import Adapter, COSAdapter, FileSystemAdapter, GitAdapter
 from founder_autopilot.config import load_app_config, override_database_path
 from founder_autopilot.database import Database
-
-
-class Adapter(Protocol):
-    name: str
-
-    def collect(self, since: str | None) -> list[dict[str, object]]:
-        ...
-
-
-@dataclass(slots=True)
-class NoopAdapter:
-    name: str
-
-    def collect(self, since: str | None) -> list[dict[str, object]]:
-        _ = since
-        return []
+from founder_autopilot.ingestion import IngestionWorker
 
 
 class DaemonService:
@@ -33,17 +17,15 @@ class DaemonService:
         database_path: str | Path | None = None,
         adapters: list[Adapter] | None = None,
     ) -> None:
-        config = load_app_config(config_path)
+        self.config_path = Path(config_path).expanduser().resolve()
+        config = load_app_config(self.config_path)
         if database_path is not None:
             config = override_database_path(config, database_path)
 
         self.config = config
         self.database = Database(config.daemon.database_path)
-        self.adapters = adapters or [
-            NoopAdapter("git"),
-            NoopAdapter("cos"),
-            NoopAdapter("filesystem"),
-        ]
+        self.ingestion = IngestionWorker(self.database, config.tracker.project_id)
+        self.adapters = adapters or self._build_default_adapters()
 
     def bootstrap(self) -> list[str]:
         applied = self.database.initialize()
@@ -57,7 +39,9 @@ class DaemonService:
                 self.config.tracker.project_id,
                 adapter.name,
             )
-            counts[adapter.name] = len(adapter.collect(cursor))
+            events = adapter.collect(cursor)
+            persisted = self.ingestion.ingest(adapter.name, events)
+            counts[adapter.name] = persisted.activity_inserted
         return counts
 
     def run(self, *, once: bool = False) -> None:
@@ -77,3 +61,15 @@ class DaemonService:
                 return
             cycle += 1
             time.sleep(self.config.daemon.poll_interval_seconds)
+
+    def _build_default_adapters(self) -> list[Adapter]:
+        project_root = self.config_path.parent.parent
+        cos_root = project_root / "data" / "cos"
+        return [
+            GitAdapter(self.config.tracker.watch_paths),
+            COSAdapter([str(cos_root)]),
+            FileSystemAdapter(
+                self.config.tracker.watch_paths,
+                self.config.tracker.excluded_paths,
+            ),
+        ]

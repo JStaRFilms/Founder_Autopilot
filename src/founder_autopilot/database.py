@@ -1,19 +1,36 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 import json
 from pathlib import Path
 import sqlite3
-from typing import Iterator
+from typing import Callable, Iterator, Sequence
 
 from importlib.resources import files
 
-from founder_autopilot.contracts import TrackerConfig
+from founder_autopilot.adapters import SourceEvent
+from founder_autopilot.contracts import ActivityEvent, TrackerConfig
+from founder_autopilot.normalization import (
+    compute_checksum,
+    make_deterministic_id,
+    normalize_timestamp,
+)
 
 
 def utc_now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+@dataclass(slots=True)
+class PersistedEvents:
+    received: int = 0
+    raw_inserted: int = 0
+    activity_inserted: int = 0
+    duplicates: int = 0
+    invalid: int = 0
+    latest_cursor: str | None = None
 
 
 class Database:
@@ -116,6 +133,229 @@ class Database:
                 (project_id, source),
             ).fetchone()
         return None if row is None else row["cursor_value"]
+
+    def persist_source_events(
+        self,
+        *,
+        project_id: str,
+        source: str,
+        events: Sequence[SourceEvent],
+        normalizer: Callable[..., ActivityEvent],
+    ) -> PersistedEvents:
+        persisted = PersistedEvents(received=len(events))
+        if not events:
+            return persisted
+
+        sorted_events = sorted(events, key=lambda event: event.cursor)
+        timestamp = utc_now_iso()
+        with self.connect() as connection:
+            for event in sorted_events:
+                observed_at = normalize_timestamp(event.observed_at)
+                payload = {
+                    **event.payload,
+                    "observedAt": observed_at,
+                    "sourceEventId": event.source_event_id,
+                }
+                checksum = compute_checksum(source, payload)
+                raw_event_id = make_deterministic_id(
+                    "raw",
+                    project_id,
+                    source,
+                    checksum,
+                )
+                payload_json = json.dumps(
+                    payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                inserted = connection.execute(
+                    """
+                    INSERT OR IGNORE INTO raw_events (
+                        id,
+                        project_id,
+                        source,
+                        observed_at,
+                        cursor_value,
+                        checksum,
+                        payload_json,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                    """,
+                    (
+                        raw_event_id,
+                        project_id,
+                        source,
+                        observed_at,
+                        event.cursor,
+                        checksum,
+                        payload_json,
+                        timestamp,
+                    ),
+                )
+                if inserted.rowcount == 0:
+                    persisted.duplicates += 1
+                    persisted.latest_cursor = event.cursor
+                    continue
+
+                persisted.raw_inserted += 1
+                try:
+                    activity = normalizer(
+                        project_id=project_id,
+                        source=source,
+                        raw_event_id=raw_event_id,
+                        payload=payload,
+                    )
+                except ValueError as exc:
+                    invalid_id = make_deterministic_id(
+                        "inv",
+                        project_id,
+                        source,
+                        event.source_event_id,
+                        checksum,
+                    )
+                    connection.execute(
+                        """
+                        INSERT OR IGNORE INTO invalid_events (
+                            id,
+                            raw_event_id,
+                            project_id,
+                            source,
+                            source_event_id,
+                            error_reason,
+                            payload_json,
+                            created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                        """,
+                        (
+                            invalid_id,
+                            raw_event_id,
+                            project_id,
+                            source,
+                            event.source_event_id,
+                            str(exc),
+                            payload_json,
+                            timestamp,
+                        ),
+                    )
+                    persisted.invalid += 1
+                else:
+                    connection.execute(
+                        """
+                        INSERT INTO activity_events (
+                            id,
+                            raw_event_id,
+                            project_id,
+                            source,
+                            timestamp,
+                            actor,
+                            signal_type,
+                            summary,
+                            metadata_json,
+                            created_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                        """,
+                        (
+                            activity.id,
+                            raw_event_id,
+                            activity.project_id,
+                            activity.source,
+                            activity.timestamp,
+                            activity.actor,
+                            activity.signal_type,
+                            activity.summary,
+                            json.dumps(
+                                activity.metadata,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ),
+                            timestamp,
+                        ),
+                    )
+                    persisted.activity_inserted += 1
+
+                persisted.latest_cursor = event.cursor
+
+            connection.execute(
+                """
+                INSERT INTO source_cursors (project_id, source, cursor_value, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(project_id, source) DO UPDATE SET
+                    cursor_value = excluded.cursor_value,
+                    updated_at = excluded.updated_at;
+                """,
+                (
+                    project_id,
+                    source,
+                    persisted.latest_cursor,
+                    timestamp,
+                ),
+            )
+            connection.commit()
+        return persisted
+
+    def list_activity_events(self, project_id: str) -> list[ActivityEvent]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    project_id,
+                    source,
+                    timestamp,
+                    actor,
+                    signal_type,
+                    summary,
+                    metadata_json
+                FROM activity_events
+                WHERE project_id = ?
+                ORDER BY timestamp ASC, id ASC;
+                """,
+                (project_id,),
+            ).fetchall()
+        return [
+            ActivityEvent(
+                id=row["id"],
+                source=row["source"],
+                timestamp=row["timestamp"],
+                actor=row["actor"],
+                project_id=row["project_id"],
+                signal_type=row["signal_type"],
+                summary=row["summary"],
+                metadata=json.loads(row["metadata_json"]),
+            )
+            for row in rows
+        ]
+
+    def list_invalid_events(self, project_id: str) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source, source_event_id, error_reason, payload_json
+                FROM invalid_events
+                WHERE project_id = ?
+                ORDER BY created_at ASC, id ASC;
+                """,
+                (project_id,),
+            ).fetchall()
+        return [
+            {
+                "source": row["source"],
+                "source_event_id": row["source_event_id"],
+                "error_reason": row["error_reason"],
+                "payload": json.loads(row["payload_json"]),
+            }
+            for row in rows
+        ]
+
+    def table_count(self, table_name: str) -> int:
+        if table_name not in {"activity_events", "invalid_events", "raw_events", "source_cursors"}:
+            raise ValueError(f"unsupported table count target: {table_name}")
+        with self.connect() as connection:
+            row = connection.execute(f"SELECT COUNT(*) AS count FROM {table_name};").fetchone()
+        return int(row["count"])
 
     def _load_migrations(self) -> list[tuple[str, str]]:
         migration_dir = files("founder_autopilot").joinpath("migrations")

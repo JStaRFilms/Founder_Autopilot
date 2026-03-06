@@ -38,9 +38,9 @@ Implement event ingestion for Git, COS, and focused folder activity.
 - Timestamps are normalized consistently
 
 ## Acceptance Checklist
-- [ ] Git adapter works
-- [ ] COS adapter works
-- [ ] File watch adapter works
-- [ ] Dedupe and ordering tests pass
+- [x] Git adapter works
+- [x] COS adapter works
+- [x] File watch adapter works
+- [x] Dedupe and ordering tests pass
 
 
