@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from founder_autopilot.analytics import AnalyticsService
 from founder_autopilot.config import ConfigValidationError, load_app_config
 from founder_autopilot.daemon import DaemonService
 
@@ -36,6 +37,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--once",
         action="store_true",
         help="Run a single daemon cycle and exit.",
+    )
+
+    analytics_parser = subparsers.add_parser(
+        "generate-reports",
+        help="Recompute scores and generate the current daily and cycle reports.",
+    )
+    _add_shared_arguments(analytics_parser)
+    analytics_parser.add_argument(
+        "--at",
+        help="Optional ISO-8601 timestamp used as the scheduler reference time.",
     )
 
     return parser
@@ -73,6 +84,31 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "run-daemon":
             service.run(once=args.once)
+            return 0
+
+        if args.command == "generate-reports":
+            service.bootstrap()
+            snapshot = service.analytics.refresh(as_of=args.at)
+            print(f"Computed daily scores: {len(snapshot.daily_scorecards)}")
+            if snapshot.daily_report is None:
+                print("Daily report: none due for the current schedule window")
+            else:
+                print(
+                    "Daily report window: "
+                    f"{snapshot.daily_report.window_start} -> {snapshot.daily_report.window_end}"
+                )
+                print(snapshot.daily_report.summary)
+            if snapshot.cycle_report is None:
+                print("Cycle report: no scored data in the active cycle")
+            else:
+                print(
+                    "Cycle report window: "
+                    f"{snapshot.cycle_report.period_start} -> {snapshot.cycle_report.period_end}"
+                )
+                print(
+                    "Average focus score: "
+                    f"{snapshot.cycle_report.average_focus_score}"
+                )
             return 0
     except ConfigValidationError as exc:
         parser.error(str(exc))

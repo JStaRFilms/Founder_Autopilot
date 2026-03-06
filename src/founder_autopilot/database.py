@@ -11,7 +11,13 @@ from typing import Callable, Iterator, Sequence
 from importlib.resources import files
 
 from founder_autopilot.adapters import SourceEvent
-from founder_autopilot.contracts import ActivityEvent, TrackerConfig
+from founder_autopilot.contracts import (
+    ActivityEvent,
+    CycleReport,
+    FocusScore,
+    ProjectSignal,
+    TrackerConfig,
+)
 from founder_autopilot.normalization import (
     compute_checksum,
     make_deterministic_id,
@@ -350,8 +356,225 @@ class Database:
             for row in rows
         ]
 
+    def upsert_project_signal(self, project_signal: ProjectSignal) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO project_signals (
+                    id,
+                    project_id,
+                    window_start,
+                    window_end,
+                    focus_minutes,
+                    drift_minutes,
+                    context_switch_count,
+                    confidence,
+                    derived_from_event_ids_json,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    focus_minutes = excluded.focus_minutes,
+                    drift_minutes = excluded.drift_minutes,
+                    context_switch_count = excluded.context_switch_count,
+                    confidence = excluded.confidence,
+                    derived_from_event_ids_json = excluded.derived_from_event_ids_json,
+                    created_at = excluded.created_at;
+                """,
+                (
+                    project_signal.id,
+                    project_signal.project_id,
+                    project_signal.window_start,
+                    project_signal.window_end,
+                    project_signal.focus_minutes,
+                    project_signal.drift_minutes,
+                    project_signal.context_switch_count,
+                    project_signal.confidence,
+                    json.dumps(
+                        project_signal.derived_from_event_ids,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    utc_now_iso(),
+                ),
+            )
+            connection.commit()
+
+    def upsert_focus_score(self, focus_score: FocusScore) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO focus_scores (
+                    id,
+                    project_id,
+                    score_date,
+                    score,
+                    trend,
+                    contributing_signals_json,
+                    computed_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(project_id, score_date) DO UPDATE SET
+                    id = excluded.id,
+                    score = excluded.score,
+                    trend = excluded.trend,
+                    contributing_signals_json = excluded.contributing_signals_json,
+                    computed_at = excluded.computed_at;
+                """,
+                (
+                    focus_score.id,
+                    focus_score.project_id,
+                    focus_score.date,
+                    focus_score.score,
+                    focus_score.trend,
+                    json.dumps(
+                        [
+                            contribution.to_contract_dict()
+                            for contribution in focus_score.contributing_signals
+                        ],
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    focus_score.computed_at,
+                ),
+            )
+            connection.commit()
+
+    def list_focus_scores(self, project_id: str) -> list[FocusScore]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    project_id,
+                    score_date,
+                    score,
+                    trend,
+                    contributing_signals_json,
+                    computed_at
+                FROM focus_scores
+                WHERE project_id = ?
+                ORDER BY score_date ASC;
+                """,
+                (project_id,),
+            ).fetchall()
+        from founder_autopilot.contracts import SignalContribution
+
+        return [
+            FocusScore(
+                id=row["id"],
+                project_id=row["project_id"],
+                date=row["score_date"],
+                score=row["score"],
+                trend=row["trend"],
+                contributing_signals=[
+                    SignalContribution(
+                        signal=item["signal"],
+                        weight=item["weight"],
+                        impact=item["impact"],
+                    )
+                    for item in json.loads(row["contributing_signals_json"])
+                ],
+                computed_at=row["computed_at"],
+            )
+            for row in rows
+        ]
+
+    def upsert_cycle_report(self, cycle_report: CycleReport) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO cycle_reports (
+                    id,
+                    project_id,
+                    period_start,
+                    period_end,
+                    average_focus_score,
+                    top_wins_json,
+                    drift_patterns_json,
+                    recommended_actions_json,
+                    generated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(project_id, period_start, period_end) DO UPDATE SET
+                    id = excluded.id,
+                    average_focus_score = excluded.average_focus_score,
+                    top_wins_json = excluded.top_wins_json,
+                    drift_patterns_json = excluded.drift_patterns_json,
+                    recommended_actions_json = excluded.recommended_actions_json,
+                    generated_at = excluded.generated_at;
+                """,
+                (
+                    cycle_report.id,
+                    cycle_report.project_id,
+                    cycle_report.period_start,
+                    cycle_report.period_end,
+                    cycle_report.average_focus_score,
+                    json.dumps(
+                        cycle_report.top_wins,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        cycle_report.drift_patterns,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        cycle_report.recommended_actions,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    cycle_report.generated_at,
+                ),
+            )
+            connection.commit()
+
+    def list_cycle_reports(self, project_id: str) -> list[CycleReport]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    project_id,
+                    period_start,
+                    period_end,
+                    average_focus_score,
+                    top_wins_json,
+                    drift_patterns_json,
+                    recommended_actions_json,
+                    generated_at
+                FROM cycle_reports
+                WHERE project_id = ?
+                ORDER BY period_start ASC;
+                """,
+                (project_id,),
+            ).fetchall()
+        return [
+            CycleReport(
+                id=row["id"],
+                project_id=row["project_id"],
+                period_start=row["period_start"],
+                period_end=row["period_end"],
+                average_focus_score=row["average_focus_score"],
+                top_wins=json.loads(row["top_wins_json"]),
+                drift_patterns=json.loads(row["drift_patterns_json"]),
+                recommended_actions=json.loads(row["recommended_actions_json"]),
+                generated_at=row["generated_at"],
+            )
+            for row in rows
+        ]
+
     def table_count(self, table_name: str) -> int:
-        if table_name not in {"activity_events", "invalid_events", "raw_events", "source_cursors"}:
+        if table_name not in {
+            "activity_events",
+            "cycle_reports",
+            "focus_scores",
+            "invalid_events",
+            "project_signals",
+            "raw_events",
+            "source_cursors",
+        }:
             raise ValueError(f"unsupported table count target: {table_name}")
         with self.connect() as connection:
             row = connection.execute(f"SELECT COUNT(*) AS count FROM {table_name};").fetchone()

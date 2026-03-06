@@ -243,6 +243,7 @@ class AppConfig:
     tracker: TrackerConfig
     daemon: DaemonSettings
     notifications: NotificationToggles
+    scheduler: "SchedulerSettings"
 
     def to_document_dict(self) -> dict[str, object]:
         return {
@@ -254,4 +255,55 @@ class AppConfig:
             "quiet_hours": self.tracker.quiet_hours.to_contract_dict(),
             "notifications": self.notifications.to_document_dict(),
             "daemon": self.daemon.to_document_dict(),
+            "scheduler": self.scheduler.to_document_dict(),
+        }
+
+
+@dataclass(slots=True)
+class SchedulerSettings:
+    summary_times: list[str]
+    cycle_length_days: int
+    cycle_anchor_date: str
+    timezone: str
+
+    def to_document_dict(self) -> dict[str, object]:
+        return {
+            "summary_times": list(self.summary_times),
+            "cycle_length_days": self.cycle_length_days,
+            "cycle_anchor_date": self.cycle_anchor_date,
+            "timezone": self.timezone,
+        }
+
+
+@dataclass(slots=True)
+class DailyReport:
+    id: str
+    project_id: str
+    window_start: str
+    window_end: str
+    focus_score: int
+    momentum_score: int
+    drift_score: int
+    overload_score: int
+    summary: str
+    top_wins: list[str] = field(default_factory=list)
+    drift_risks: list[str] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
+    generated_at: str = ""
+
+    def to_document_dict(self) -> dict[str, object]:
+        return {
+            "id": self.id,
+            "projectId": self.project_id,
+            "windowStart": self.window_start,
+            "windowEnd": self.window_end,
+            "focusScore": self.focus_score,
+            "momentumScore": self.momentum_score,
+            "driftScore": self.drift_score,
+            "overloadScore": self.overload_score,
+            "summary": self.summary,
+            "topWins": list(self.top_wins),
+            "driftRisks": list(self.drift_risks),
+            "recommendedActions": list(self.recommended_actions),
+            "generatedAt": self.generated_at,
         }

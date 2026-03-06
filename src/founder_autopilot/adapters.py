@@ -73,7 +73,7 @@ class GitAdapter:
                         },
                     )
                 )
-        return sorted(events, key=lambda event: event.cursor)
+        return events
 
     def _discover_repositories(self) -> list[Path]:
         repositories: dict[str, Path] = {}

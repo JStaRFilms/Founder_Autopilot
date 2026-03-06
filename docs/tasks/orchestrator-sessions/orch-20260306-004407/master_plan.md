@@ -25,7 +25,7 @@ Deliver Founder Autopilot v1 as a local-first system that tracks founder activit
 | 2 | 02_design_system_and_dashboard_spec.task.md | vibe-architect | vibe-design | 1 | pending |
 | 3 | 03_backend_scaffold_and_data_model.task.md | vibe-code | vibe-build | 1 | completed |
 | 4 | 04_event_ingestion_git_cos_files.task.md | vibe-code | vibe-build | 3 | completed |
-| 5 | 05_scoring_scheduler_and_reports.task.md | mode-code | mode-code | 4 | pending |
+| 5 | 05_scoring_scheduler_and_reports.task.md | mode-code | mode-code | 4 | completed |
 | 6 | 06_dashboard_ui_and_settings.task.md | vibe-code | vibe-build | 2,5 | pending |
 | 7 | 07_notifications_codex_dashboard_os.task.md | mode-code | mode-code | 5,6 | pending |
 | 8 | 08_review_finalize_docs.task.md | vibe-review | mode-review, vibe-finalize, vibe-syncDocs | 1-7 | pending |

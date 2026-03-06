@@ -37,9 +37,9 @@ Build focus/drift scoring, 3x-daily scheduler, and report generation.
 - Reports generate with expected sections
 
 ## Acceptance Checklist
-- [ ] Scoring engine implemented
-- [ ] Scheduler implemented
-- [ ] Daily report generated
-- [ ] Cycle report generated
+- [x] Scoring engine implemented
+- [x] Scheduler implemented
+- [x] Daily report generated
+- [x] Cycle report generated
 
 

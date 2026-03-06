@@ -13,8 +13,14 @@ from founder_autopilot.contracts import (
     DaemonSettings,
     NotificationToggles,
     QuietHours,
+    SchedulerSettings,
     Sensitivity,
     TrackerConfig,
+)
+from founder_autopilot.scheduler import (
+    DEFAULT_CYCLE_ANCHOR_DATE,
+    DEFAULT_CYCLE_LENGTH_DAYS,
+    DEFAULT_SUMMARY_TIMES,
 )
 
 
@@ -46,7 +52,16 @@ def load_app_config(config_path: str | Path) -> AppConfig:
         notification_channels=notifications.enabled_channels(),
     )
     daemon = _parse_daemon(raw.get("daemon", {}), path.parent)
-    return AppConfig(tracker=tracker, daemon=daemon, notifications=notifications)
+    scheduler = _parse_scheduler(
+        raw.get("scheduler", {}),
+        default_timezone=tracker.quiet_hours.timezone,
+    )
+    return AppConfig(
+        tracker=tracker,
+        daemon=daemon,
+        notifications=notifications,
+        scheduler=scheduler,
+    )
 
 
 def override_database_path(config: AppConfig, database_path: str | Path) -> AppConfig:
@@ -109,6 +124,49 @@ def _parse_signal_weights(raw: object) -> dict[str, float]:
             raise ConfigValidationError(f"signal_weights.{key} cannot be negative.")
         weights[key] = float(value)
     return weights
+
+
+def _parse_scheduler(raw: object, *, default_timezone: str) -> SchedulerSettings:
+    mapping = _require_mapping(raw, "scheduler")
+    summary_times_raw = mapping.get("summary_times", list(DEFAULT_SUMMARY_TIMES))
+    if not isinstance(summary_times_raw, list) or not summary_times_raw:
+        raise ConfigValidationError("scheduler.summary_times must be a non-empty list.")
+
+    summary_times: list[str] = []
+    for index, value in enumerate(summary_times_raw):
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigValidationError(
+                f"scheduler.summary_times[{index}] must be a non-empty HH:MM string."
+            )
+        normalized = value.strip()
+        _validate_time_string(normalized, f"scheduler.summary_times[{index}]")
+        if normalized not in summary_times:
+            summary_times.append(normalized)
+    cycle_length_days = _require_positive_int(
+        mapping.get("cycle_length_days", DEFAULT_CYCLE_LENGTH_DAYS),
+        "scheduler.cycle_length_days",
+    )
+    cycle_anchor_date = _require_non_empty_string(
+        mapping.get("cycle_anchor_date", DEFAULT_CYCLE_ANCHOR_DATE),
+        "scheduler.cycle_anchor_date",
+    )
+    try:
+        datetime.strptime(cycle_anchor_date, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ConfigValidationError(
+            "scheduler.cycle_anchor_date must use YYYY-MM-DD format."
+        ) from exc
+    timezone = _require_non_empty_string(
+        mapping.get("timezone", default_timezone),
+        "scheduler.timezone",
+    )
+    _validate_timezone_string(timezone)
+    return SchedulerSettings(
+        summary_times=summary_times,
+        cycle_length_days=cycle_length_days,
+        cycle_anchor_date=cycle_anchor_date,
+        timezone=timezone,
+    )
 
 
 def _parse_quiet_hours(raw: object) -> QuietHours:

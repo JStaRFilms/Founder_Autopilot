@@ -25,3 +25,8 @@ os = true
 poll_interval_seconds = 300
 database_path = "../data/founder_autopilot.db"
 log_level = "INFO"
+
+[scheduler]
+summary_times = ["09:00", "13:00", "17:00"]
+cycle_length_days = 14
+cycle_anchor_date = "2026-03-02"
