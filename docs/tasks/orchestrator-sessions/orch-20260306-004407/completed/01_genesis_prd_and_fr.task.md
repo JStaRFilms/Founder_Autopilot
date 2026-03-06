@@ -1,4 +1,4 @@
-﻿# 01 - Genesis PRD and FR
+# 01 - Genesis PRD and FR
 
 ## Agent Setup (DO THIS FIRST)
 ### Workflow to Follow
@@ -45,9 +45,9 @@ Produce complete product blueprints for Founder Autopilot v1.
 - All 6 required interfaces are defined
 
 ## Acceptance Checklist
-- [ ] PRD committed
-- [ ] FR issue files committed
-- [ ] Interface definitions included in spec
-- [ ] Scope boundaries documented
+- [x] PRD committed
+- [x] FR issue files committed
+- [x] Interface definitions included in spec
+- [x] Scope boundaries documented
 
 
