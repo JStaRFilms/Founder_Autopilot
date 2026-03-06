@@ -37,9 +37,9 @@ Scaffold Python daemon service with SQLite and API/data contracts.
 - Config can be loaded and validated
 
 ## Acceptance Checklist
-- [ ] Backend scaffold created
-- [ ] Migration flow verified
-- [ ] Config loader implemented
-- [ ] Base contract documented
+- [x] Backend scaffold created
+- [x] Migration flow verified
+- [x] Config loader implemented
+- [x] Base contract documented
 
 

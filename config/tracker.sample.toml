@@ -1,0 +1,27 @@
+project_id = "founder-autopilot"
+watch_paths = ["../docs", "../src"]
+excluded_paths = ["../.git", "../.agent"]
+nudge_sensitivity = "medium"
+
+[signal_weights]
+code = 1.0
+writing = 0.8
+planning = 0.7
+research = 0.5
+ops = 0.4
+unknown = 0.2
+
+[quiet_hours]
+start = "22:00"
+end = "07:00"
+timezone = "Africa/Lagos"
+
+[notifications]
+codex = true
+dashboard = true
+os = true
+
+[daemon]
+poll_interval_seconds = 300
+database_path = "../data/founder_autopilot.db"
+log_level = "INFO"
