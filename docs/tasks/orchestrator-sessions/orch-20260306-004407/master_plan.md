@@ -1,4 +1,4 @@
-﻿# Founder Autopilot - Orchestrator Master Plan
+# Founder Autopilot - Orchestrator Master Plan
 
 Session ID: orch-20260306-004407
 Created: 2026-03-06 00:44:07
@@ -21,7 +21,7 @@ Deliver Founder Autopilot v1 as a local-first system that tracks founder activit
 ## Task Registry
 | # | File | Mode | Workflow(s) | Depends On | Status |
 |---|------|------|-------------|------------|--------|
-| 1 | 01_genesis_prd_and_fr.task.md | vibe-architect | vibe-genesis | - | pending |
+| 1 | 01_genesis_prd_and_fr.task.md | vibe-architect | vibe-genesis | - | completed |
 | 2 | 02_design_system_and_dashboard_spec.task.md | vibe-architect | vibe-design | 1 | pending |
 | 3 | 03_backend_scaffold_and_data_model.task.md | vibe-code | vibe-build | 1 | pending |
 | 4 | 04_event_ingestion_git_cos_files.task.md | vibe-code | vibe-build | 3 | pending |
@@ -38,7 +38,7 @@ Deliver Founder Autopilot v1 as a local-first system that tracks founder activit
 - Gate E (after 8): final signoff
 
 ## Progress Checklist
-- [ ] Gate A passed
+- [x] Gate A passed
 - [ ] Gate B passed
 - [ ] Gate C passed
 - [ ] Gate D passed
