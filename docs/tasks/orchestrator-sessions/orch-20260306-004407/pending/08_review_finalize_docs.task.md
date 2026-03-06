@@ -11,9 +11,17 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
-- code-review
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Final lifecycle coordination |
+| code-review | Structured defect-focused review pass |
+| security-audit | Security regression and risk checks before signoff |
+| sync-docs | Ensure implementation and docs stay aligned |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Run full validation, finalize handoff, and produce v1.1 backlog.
 
@@ -38,3 +46,5 @@ Run full validation, finalize handoff, and produce v1.1 backlog.
 - [ ] Runbook complete
 - [ ] Setup guide complete
 - [ ] v1.1 backlog documented
+
+

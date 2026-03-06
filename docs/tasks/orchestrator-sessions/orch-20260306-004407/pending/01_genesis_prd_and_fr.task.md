@@ -8,9 +8,16 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi (workflow router)
-- avoid-feature-creep (scope discipline)
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Core workflow routing and lifecycle protocol |
+| avoid-feature-creep | Keep MUS scope tight and explicit |
+| spawn-task | Produce implementation-ready FR issue breakdowns |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Produce complete product blueprints for Founder Autopilot v1.
 
@@ -42,3 +49,5 @@ Produce complete product blueprints for Founder Autopilot v1.
 - [ ] FR issue files committed
 - [ ] Interface definitions included in spec
 - [ ] Scope boundaries documented
+
+

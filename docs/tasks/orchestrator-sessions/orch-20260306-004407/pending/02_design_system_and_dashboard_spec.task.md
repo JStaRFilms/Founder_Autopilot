@@ -8,9 +8,17 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
-- frontend-design
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Workflow discipline and handoff protocol |
+| frontend-design | Produce strong, production-grade UI direction |
+| ui-ux-pro-max | Apply structured UX and visual system standards |
+| web-design-guidelines | Ensure accessibility/usability guardrails are built into specs |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Create full UI system pass for the dashboard before coding.
 
@@ -43,3 +51,5 @@ Create full UI system pass for the dashboard before coding.
 - [ ] Screen specs file created
 - [ ] Mockup artifacts created
 - [ ] Accessibility and responsive behavior covered
+
+

@@ -8,8 +8,15 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Workflow and gate alignment |
+| avoid-feature-creep | Prevent overbuilding backend beyond v1 local-first needs |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Scaffold Python daemon service with SQLite and API/data contracts.
 
@@ -34,3 +41,5 @@ Scaffold Python daemon service with SQLite and API/data contracts.
 - [ ] Migration flow verified
 - [ ] Config loader implemented
 - [ ] Base contract documented
+
+

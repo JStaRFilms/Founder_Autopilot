@@ -8,8 +8,15 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Orchestrated integration flow |
+| security-audit | Reduce risk in notification adapters and fallback paths |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Implement nudge delivery routing across all v1 channels.
 
@@ -34,3 +41,5 @@ Implement nudge delivery routing across all v1 channels.
 - [ ] Dashboard channel works
 - [ ] OS notification channel works
 - [ ] Fallback/error handling verified
+
+

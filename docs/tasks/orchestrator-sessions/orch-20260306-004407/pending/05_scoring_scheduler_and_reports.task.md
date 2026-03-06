@@ -8,8 +8,15 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Phase discipline and reporting cadence |
+| avoid-feature-creep | Keep scoring/reporting simple and actionable for v1 |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Build focus/drift scoring, 3x-daily scheduler, and report generation.
 
@@ -34,3 +41,5 @@ Build focus/drift scoring, 3x-daily scheduler, and report generation.
 - [ ] Scheduler implemented
 - [ ] Daily report generated
 - [ ] Cycle report generated
+
+

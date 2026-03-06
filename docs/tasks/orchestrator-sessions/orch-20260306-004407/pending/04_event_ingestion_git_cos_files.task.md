@@ -8,8 +8,15 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Controlled execution flow |
+| security-audit | Ensure ingestion logic avoids unsafe command/file handling patterns |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Implement event ingestion for Git, COS, and focused folder activity.
 
@@ -35,3 +42,5 @@ Implement event ingestion for Git, COS, and focused folder activity.
 - [ ] COS adapter works
 - [ ] File watch adapter works
 - [ ] Dedupe and ordering tests pass
+
+

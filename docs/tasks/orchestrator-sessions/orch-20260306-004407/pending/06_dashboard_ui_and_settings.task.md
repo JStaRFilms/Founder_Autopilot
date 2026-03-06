@@ -8,9 +8,17 @@
 - MANDATORY: run `vibe-primeAgent` first
 
 ### Required Skills
-- takomi
-- frontend-design
+Load the following skills first, then scan for any additional relevant skills before executing.
 
+| Skill | Why |
+|---|---|
+| takomi | Workflow compliance |
+| frontend-design | Implement distinctive, production-quality UI |
+| nextjs-standards | Keep App Router structure and conventions consistent |
+| webapp-testing | Verify interactive dashboard behavior and state flows |
+
+### Additional Skill Scan (MANDATORY)
+- Check available skills list and include any directly relevant skill discovered during task analysis.
 ## Objective
 Implement Next.js dashboard from approved design specs.
 
@@ -34,3 +42,5 @@ Implement Next.js dashboard from approved design specs.
 - [ ] Data bindings complete
 - [ ] Settings persistence complete
 - [ ] Responsive behavior verified
+
+
