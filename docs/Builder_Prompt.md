@@ -22,3 +22,8 @@
 - Keep scoring/nudge logic explainable in UI and logs.
 - Enforce strict boundaries against feature creep into team/cloud/mobile scope.
 - Maintain interface compatibility with the six required contracts in `docs/Project_Requirements.md`.
+
+## Mandatory Mockup-Driven Implementation
+The `/docs/mockups` folder is the source of truth for all front-end UI and UX work in v1.
+Before implementing a dashboard screen, open the corresponding mockup and replicate its layout, hierarchy, and component intent.
+Do not replace the documented calm editorial direction with generic SaaS styling, and do not remove explanation affordances for computed scores, alerts, or delivery states.
